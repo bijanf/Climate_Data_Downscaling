@@ -1,0 +1,88 @@
+# This is the namelist for cutting and preparing the netcdf files for bias adjustment and 
+# statistical downscaling 
+##########################################################################################
+# first domain:
+#lat0=38.25 # south lat
+#lat1=39.75 # north lat 
+#lon0=66.25 # west lon
+#lon1=67.75 # east lon
+
+#lat1=56.50
+#lat0=33.20
+#lon0=44.00
+#lon1=91.00
+
+#lat0=33.25 #first lat
+#lat1=56.25 #second lat
+#lon0=44.25 #first lon
+#lon1=90.75 #second lon
+
+lat0=30.00 #first lat
+lat1=60.00 #second lat
+lon0=40.00 #first lon
+lon1=90.00 #second lon
+
+# header of the chelsa
+header="chelsa-w5e5v1.0_obsclim_"
+# suffix: 
+#suffix="_30arcsec_global_daily_"
+suffix="_90arcsec_global_daily_"
+res_obs="90" # in arcsecond
+
+# where the chelsa is:
+#chelsa_dir="/p/projects/proclias/1km/data/chelsa_w5e5/nc/"
+chelsa_dir="/p/projects/proclias/1km/data/chelsa_w5e5/aggregate/90arcsec/"
+# where to write the files
+out_dir_intermediate="./data/"
+# path to ISIMIP3b data:
+isimip3b_dir="/p/projects/isimip/isimip/ISIMIP3b/InputData/climate/atmosphere/bias-adjusted/global/daily/"
+#isimip3b_dir="/p/projects/isimip/isimip/ISIMIP3b/SecondaryInputData/climate/atmosphere/bias-adjusted/global/daily/" #------------------
+# declare the variables:                                                                                                              |
+scenarios=(historical ssp126 ssp370 ssp585) # all scenarios                                                                           |
+#scenarios=(historical hist-nat) # all scenarios                                                                                      |
+#scenarios=(hist-nat) # all scenarios                                                                                                 |  
+#scenarios=(historical) # all scenarios                                                                                               |
+#scenarios=(ssp585) #for InputData and ssp585 for extension for the period 2014-2029, for application period                          | 
+scenarios_future=(ssp126 ssp370 ssp585) # future scenarios                                                                            |
+models=(GFDL-ESM4  IPSL-CM6A-LR  MPI-ESM1-2-HR  MRI-ESM2-0  UKESM1-0-LL)                                                             |  
+#models=(CanESM5  CNRM-CM6-1  CNRM-ESM2-1  EC-Earth3  MIROC6) # for SecondaryInputData and historical #---------------------------------                            
+#models=(CanESM5) # for SecondaryInputData and historical #---------------------------------
+#models=(GFDL-ESM4  IPSL-CM6A-LR  MPI-ESM1-2-HR  MRI-ESM2-0  UKESM1-0-LL) # for InputData and historical
+#########models=(CanESM5  CNRM-CM6-1  GFDL-ESM4  IPSL-CM6A-LR  MIROC6  MRI-ESM2-0)
+variables=("pr" "rsds" "tas" "tasmax" "tasmin")
+
+
+#member=4 # just for labeling the ensemble-members if needed
+# the following comes from the "ncdump -c " of a sample output of "cut_and_prepare.sh"
+# keep in mind that the original ISIMIP3b data has the following grid structure: 
+######################################################
+#############            gridtype  = lonlat
+#############            gridsize  = 259200
+#############            xsize     = 720
+#############            ysize     = 360
+#############            xname     = lon
+#############            xlongname = "longitude"
+#############            xunits    = "degrees_east"
+#############            yname     = lat
+#############            ylongname = "latitude"
+#############            yunits    = "degrees_north"
+#############            xfirst    = -179.75
+#############            xinc      = 0.5
+#############            yfirst    = 89.75
+#############            yinc      = -0.5
+######################################################
+# directory for writing the merged preprocessing files:
+data_dir="./data/merged/"
+# directory for writing the output files:
+out_dir="./out/"
+####################################
+## do not change the following lines
+year1obs=1979
+year2obs=2014
+#res0=0.5
+#res1=0.25
+#res2=0.125
+#res3=0.04838709677419355
+#res4=0.023809523809523808
+#res5=0.011811023622047244
+#####################################
