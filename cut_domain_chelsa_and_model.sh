@@ -20,17 +20,17 @@ set -ex
 header="chelsa-w5e5v1.0_obsclim_"
 # suffix: 
 #suffix="_30arcsec_global_daily_"
-#suffix="_300arcsec_global_daily_"
-suffix="_90arcsec_global_daily_"
-#res_obs="300" # in arcsecond
+suffix="_300arcsec_global_daily_"
+#suffix="_90arcsec_global_daily_"
+res_obs="300" # in arcsecond
 #chelsa_dir="/p/projects/proclias/1km/data/chelsa_w5e5/nc/"
-chelsa_dir="/p/projects/proclias/1km/data/chelsa_w5e5/aggregate/90arcsec/"
+chelsa_dir="/p/projects/proclias/1km/data/chelsa_w5e5/aggregate/300arcsec/"
 out_dir_intermediate="./data/"
 
-lat0=52.25 #first lat
-lat1=53.75 #second lat
-lon0=12.25 #first lon
-lon1=13.75 #second lon
+lat0=33.25 #first lat
+lat1=56.75 #second lat
+lon0=45.25 #first lon
+lon1=90.75 #second lon
 var="tas"
 
 for year in {1979..2014}
