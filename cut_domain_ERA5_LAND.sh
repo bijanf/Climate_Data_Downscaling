@@ -34,27 +34,14 @@ lat0=33.25 #first lat
 lat1=56.75 #second lat
 lon0=45.25 #first lon
 lon1=90.75 #second lon
-#var="tas"
-for var in pr rsds tasmax tasmin 
-do 
- echo "variable is "$var
-for year in {1981..2014}
-do 
-        echo "The year is "$year
-        for mon in {01..12}
-        do 
-            echo "The month is "$mon
-            #ncks -O -d lat,${lat0},${lat1} -d lon,${lon0},${lon1} ${chelsa_dir}${header}${var}${suffix}${year}${mon}.nc ${out_dir_intermediate}${header}${var}${suffix}${year}${mon}_lat${lat0}_${lat1}_lon${lon0}_${lon1}_cut.nc
-	    ncks -O -d lat,${lat0},${lat1} -d lon,${lon0},${lon1} ${chelsa_dir}${header}${var}${suffix}${year}${mon}.nc ${out_dir\
-_intermediate}${header}${var}${suffix}${year}${mon}_lat${lat0}_${lat1}_lon${lon0}_${lon1}_cut.nc
+var="2m_dewpoint_temperature_"
+for file in ${chelsa_dir}${var}*.nc; do
+   echo "The file is "$file
+   filename=$(basename -- "$file")
+   ncks -O -d lat,${lat0},${lat1} -d lon,${lon0},${lon1} ${file} ${out_dir_intermediate}${filename}_lat${lat0}_${lat1}_lon${lon0}_${lon1}_cut.nc
 
-        done
- done #year
-done #var
-#####################################################################
-# now cut the domain from ISIMIP biaes adjusted and downscaled data : 
-######################################################################
-isimip_data="/p/projects/isimip/isimip/ISIMIP3b/InputData/climate/atmosphere/bias-adjusted/global/daily/"
+
+done #file
 
 
 
