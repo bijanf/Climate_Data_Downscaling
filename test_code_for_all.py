@@ -125,8 +125,8 @@ def load_and_process_data(source_id, member_id, scenarios):
 			print("Saving datasets to NetCDF...")
 			output_path_hist = f"dbcca_data/{source_id}_historical_{member_id}_RAW.nc"
 			output_path_ssp3 = f"dbcca_data/{source_id}_{scenario}_{member_id}_RAW.nc"
-			tas_hist_raw.to_netcdf(output_path_hist)
-			tas_ssp3_raw.to_netcdf(output_path_ssp3)
+			#tas_hist_raw.to_netcdf(output_path_hist)
+			#tas_ssp3_raw.to_netcdf(output_path_ssp3)
 			print(f"Historical data saved to: {output_path_hist}")
 			print(f"Future SSP3-7.0 scenario data saved to: {output_path_ssp3}")
 
@@ -154,10 +154,10 @@ def load_and_process_data(source_id, member_id, scenarios):
 					)
 					# Ensure consistent indentation for the following lines
 					# Reorder dimensions of the output NetCDF files
-					reorder_netcdf_dimensions(file_hist_dbcca, 'reordered_'+file_hist_dbcca)
-					reorder_netcdf_dimensions(file_ssp3_dbcca, 'reordered_'+file_ssp3_dbcca)
-					reorder_netcdf_dimensions(file_hist_bcca, 'reordered_'+file_hist_bcca)
-					reorder_netcdf_dimensions(file_ssp3_bcca, 'reordered_'+file_ssp3_bcca)
+					reorder_netcdf_dimensions(file_hist_dbcca, file_hist_dbcca + '_reordered.nc')
+					reorder_netcdf_dimensions(file_ssp3_dbcca, file_ssp3_dbcca + '_reordered.nc')
+					reorder_netcdf_dimensions(file_hist_bcca,  file_hist_bcca  + '_reordered.nc')
+					reorder_netcdf_dimensions(file_ssp3_bcca,  file_ssp3_bcca  + '_reordered.nc')
 					print("Downscaling process completed.")
 			else:
 					print("DBCCA outputs found. Skipping downscaling.")
