@@ -120,8 +120,8 @@ def load_and_process_data(source_id, member_id, scenarios):
 
 
 			# Convert calendar if necessary
-			tas_hist_raw = convert_calendar(tas_hist_raw, 'noleap').chunk({'time': -1})
-			tas_ssp3_raw = convert_calendar(tas_ssp3_raw, 'noleap').chunk({'time': -1})
+			tas_hist_raw = convert_calendar(tas_hist_raw, 'noleap', align_on='date').chunk({'time': -1})
+			tas_ssp3_raw = convert_calendar(tas_ssp3_raw, 'noleap', align_on='date').chunk({'time': -1})
 			print("Saving datasets to NetCDF...")
 			output_path_hist = f"dbcca_data/{source_id}_historical_{member_id}_RAW.nc"
 			output_path_ssp3 = f"dbcca_data/{source_id}_{scenario}_{member_id}_RAW.nc"
@@ -154,10 +154,10 @@ def load_and_process_data(source_id, member_id, scenarios):
 					)
 					# Ensure consistent indentation for the following lines
 					# Reorder dimensions of the output NetCDF files
-					reorder_netcdf_dimensions(file_hist_dbcca, file_hist_dbcca + '_reordered.nc')
-					reorder_netcdf_dimensions(file_ssp3_dbcca, file_ssp3_dbcca + '_reordered.nc')
-					reorder_netcdf_dimensions(file_hist_bcca,  file_hist_bcca  + '_reordered.nc')
-					reorder_netcdf_dimensions(file_ssp3_bcca,  file_ssp3_bcca  + '_reordered.nc')
+					#reorder_netcdf_dimensions(file_hist_dbcca, file_hist_dbcca + '_reordered.nc')
+					#reorder_netcdf_dimensions(file_ssp3_dbcca, file_ssp3_dbcca + '_reordered.nc')
+					#reorder_netcdf_dimensions(file_hist_bcca,  file_hist_bcca  + '_reordered.nc')
+					#reorder_netcdf_dimensions(file_ssp3_bcca,  file_ssp3_bcca  + '_reordered.nc')
 					print("Downscaling process completed.")
 			else:
 					print("DBCCA outputs found. Skipping downscaling.")
