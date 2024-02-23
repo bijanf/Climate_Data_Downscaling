@@ -123,8 +123,8 @@ def load_and_process_data(source_id, member_id, scenarios):
 			tas_hist_raw = convert_calendar(tas_hist_raw, 'noleap').chunk({'time': -1})
 			tas_ssp3_raw = convert_calendar(tas_ssp3_raw, 'noleap').chunk({'time': -1})
 			print("Saving datasets to NetCDF...")
-			output_path_hist = 'dbcca_data/{source_id}_historical_{member_id}_RAW.nc'
-			output_path_ssp3 = 'dbcca_data/{source_id}_{scenario}_{member_id}_RAW.nc'
+			output_path_hist = f"dbcca_data/{source_id}_historical_{member_id}_RAW.nc"
+			output_path_ssp3 = f"dbcca_data/{source_id}_{scenario}_{member_id}_RAW.nc"
 			tas_hist_raw.to_netcdf(output_path_hist)
 			tas_ssp3_raw.to_netcdf(output_path_ssp3)
 			print(f"Historical data saved to: {output_path_hist}")
