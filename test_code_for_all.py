@@ -18,7 +18,7 @@ from DBCCA import DBCCA
 models_scenarios = [
 	("GFDL-ESM4", "r1i1p1f1", ["ssp126", "ssp370", "ssp585"]),
 	("UKESM1-0-LL", "r1i1p1f2", ["ssp126", "ssp370", "ssp585"]),
-	("MPI-ESM1-2-hr", "r1i1p1f1", ["ssp126", "ssp370", "ssp585"]),
+	("MPI-ESM1-2-HR", "r1i1p1f1", ["ssp126", "ssp370", "ssp585"]),
 	("IPSL-CM6A-LR", "r1i1p1f1", ["ssp126", "ssp370", "ssp585"]),
 	("MRI-ESM2-0", "r1i1p1f1", ["ssp126", "ssp370", "ssp585"])
 ]
@@ -49,6 +49,8 @@ url = "chelsa-w5e5v1.0_obsclim_tas_300arcsec_global_daily_1979_2014.nc"
 era5_ds = xr.open_dataset(url, engine='netcdf4')
 tas_obs = era5_ds.tas.sel(lat=slice(*lat_bnds), lon=slice(*lon_bnds),
 						  time=era5_ds.time.dt.year.isin(years_hist)) - 273.15
+tas_obs.to_netcdf("obs.nc")
+exit(0)
 
 def reorder_netcdf_dimensions(input_file_path, output_file_path):
 	"""
@@ -79,13 +81,25 @@ def reorder_netcdf_dimensions(input_file_path, output_file_path):
 
 def load_and_process_data(source_id, member_id, scenarios):
 	# Assuming manage_dask_client and other initial setup is done elsewhere
-
+	manage_dask_client()
 	# Define spatial and temporal boundaries
 
 
 	# Load CMIP6 data catalog
 	df_catalog = pd.read_csv('https://storage.googleapis.com/cmip6/cmip6-zarr-consolidated-stores.csv')
+	df_search_hist = df_catalog[(df_catalog.table_id == 'day') & (df_catalog.source_id == source_id) &
+					   (df_catalog.variable_id == 'tas') & (df_catalog.experiment_id == 'historical') &
+					   (df_catalog.member_id == member_id)]
 
+	# Example for loading dataset (simplified)
+	# Actual implementation may vary based on your data source and structure
+	cs = gcsfs.GCSFileSystem(token='anon')
+	url = df_search_hist[df_search_hist.experiment_id == 'historical'].zstore.values[0]
+	mapper = cs.get_mapper(url)
+	ds = xr.open_zarr(mapper, consolidated=True)
+	tas = ds.tas.sel(lat=slice(*lat_bnds), lon=slice(*lon_bnds))
+	tas_hist_raw = tas.sel(time=tas.time.dt.year.isin(years_hist)) - 273.15
+	tas_hist_raw = convert_calendar(tas_hist_raw, 'noleap', align_on='date').chunk({'time': -1})
 	for scenario in scenarios:  # Include historical scenario
 		print(f"Processing {source_id}, {member_id}, {scenario}...")
 
@@ -103,24 +117,14 @@ def load_and_process_data(source_id, member_id, scenarios):
 			tas = ds.tas.sel(lat=slice(*lat_bnds), lon=slice(*lon_bnds))
 			tas_ssp3_raw = tas.sel(time=tas.time.dt.year.isin(years_future)) - 273.15
 
-		df_search_hist = df_catalog[(df_catalog.table_id == 'day') & (df_catalog.source_id == source_id) &
-							   (df_catalog.variable_id == 'tas') & (df_catalog.experiment_id == 'historical') &
-							   (df_catalog.member_id == member_id)]
-		print(df_search_hist)
-		if not df_search_scenario.empty:
-			# Example for loading dataset (simplified)
-			# Actual implementation may vary based on your data source and structure
-			cs = gcsfs.GCSFileSystem(token='anon')
-			url = df_search_hist[df_search_hist.experiment_id == 'historical'].zstore.values[0]
-			mapper = cs.get_mapper(url)
-			ds = xr.open_zarr(mapper, consolidated=True)
-			tas = ds.tas.sel(lat=slice(*lat_bnds), lon=slice(*lon_bnds))
-			tas_hist_raw = tas.sel(time=tas.time.dt.year.isin(years_hist)) - 273.15
+
+			print(df_search_hist)
+
 
 
 
 			# Convert calendar if necessary
-			tas_hist_raw = convert_calendar(tas_hist_raw, 'noleap', align_on='date').chunk({'time': -1})
+
 			tas_ssp3_raw = convert_calendar(tas_ssp3_raw, 'noleap', align_on='date').chunk({'time': -1})
 			print("Saving datasets to NetCDF...")
 			output_path_hist = f"dbcca_data/{source_id}_historical_{member_id}_RAW.nc"
@@ -129,7 +133,6 @@ def load_and_process_data(source_id, member_id, scenarios):
 			#tas_ssp3_raw.to_netcdf(output_path_ssp3)
 			print(f"Historical data saved to: {output_path_hist}")
 			print(f"Future SSP3-7.0 scenario data saved to: {output_path_ssp3}")
-
 			# Define output file paths for DBCCA
 			file_hist_dbcca = f"dbcca_data/{source_id}_historical_{member_id}_DBCCA.nc"
 			file_ssp3_dbcca = f"dbcca_data/{source_id}_{scenario}_{member_id}_DBCCA.nc"
@@ -146,6 +149,7 @@ def load_and_process_data(source_id, member_id, scenarios):
 					tas_obs,
 					"tas",
 					units="degC",
+					bc_grouper = 'time.dayofyear',
 					fout_hist_bcca=file_hist_bcca,
 					fout_future_bcca=file_ssp3_bcca,
 					fout_hist_dbcca=file_hist_dbcca,
