@@ -39,8 +39,11 @@ import gcsfs
 from xclim.core.calendar import convert_calendar
 from DBCCA import DBCCA  # Assuming this is your downscaling function
 
-lat_bnds = [35.25, 37.75]
-lon_bnds = [45.25, 47.75]
+#lat_bnds = [35.25, 37.75]
+#lon_bnds = [45.25, 47.75]
+
+lat_bnds = [33.25, 56.75]
+lon_bnds = [45.25, 90.75]
 years_hist = range(1979, 2011)
 years_future = range(2071, 2101)
 
@@ -50,7 +53,6 @@ era5_ds = xr.open_dataset(url, engine='netcdf4')
 tas_obs = era5_ds.tas.sel(lat=slice(*lat_bnds), lon=slice(*lon_bnds),
 						  time=era5_ds.time.dt.year.isin(years_hist)) - 273.15
 tas_obs.to_netcdf("obs.nc")
-exit(0)
 
 def reorder_netcdf_dimensions(input_file_path, output_file_path):
 	"""
