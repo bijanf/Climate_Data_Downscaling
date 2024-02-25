@@ -42,17 +42,35 @@ from DBCCA import DBCCA  # Assuming this is your downscaling function
 #lat_bnds = [35.25, 37.75]
 #lon_bnds = [45.25, 47.75]
 
-lat_bnds = [33.25, 56.75]
-lon_bnds = [45.25, 90.75]
+#lat_bnds = [33.25, 56.75]
+#lon_bnds = [45.25, 90.75]
+
+# Define the whole domain
+whole_lat_bnds = [33.25, 56.75]
+whole_lon_bnds = [45.25, 90.75]
+# Generate 4x4 degree boxes within the domain
+def generate_boxes(lat_range, lon_range, step=4):
+    lat_boxes = np.arange(lat_range[0], lat_range[1], step)
+    lon_boxes = np.arange(lon_range[0], lon_range[1], step)
+    boxes = []
+    for lat in lat_boxes:
+        for lon in lon_boxes:
+            boxes.append((max(lat, lat_range[0]), min(lat+step, lat_range[1]),
+                          max(lon, lon_range[0]), min(lon+step, lon_range[1])))
+    return boxes
+
+boxes = generate_boxes(whole_lat_bnds, whole_lon_bnds)
+
+
+
 years_hist = range(1979, 2011)
 years_future = range(2071, 2101)
 
 
 url = "chelsa-w5e5v1.0_obsclim_tas_300arcsec_global_daily_1979_2014.nc"
 era5_ds = xr.open_dataset(url, engine='netcdf4')
-tas_obs = era5_ds.tas.sel(lat=slice(*lat_bnds), lon=slice(*lon_bnds),
-						  time=era5_ds.time.dt.year.isin(years_hist)) - 273.15
-tas_obs.to_netcdf("obs.nc")
+
+#tas_obs.to_netcdf("obs.nc")
 
 def reorder_netcdf_dimensions(input_file_path, output_file_path):
 	"""
@@ -81,11 +99,18 @@ def reorder_netcdf_dimensions(input_file_path, output_file_path):
 
 
 
-def load_and_process_data(source_id, member_id, scenarios):
+def load_and_process_data(source_id, member_id, scenarios, box):
 	# Assuming manage_dask_client and other initial setup is done elsewhere
 	manage_dask_client()
 	# Define spatial and temporal boundaries
-
+	lat_bnds = [box[0], box[1]]
+	lon_bnds = [box[2], box[3]]
+	lat_lon_ext = f"{lat_bnds[0]}-{lat_bnds[1]}_{lon_bnds[0]}-{lon_bnds[1]}"
+	tas_obs = era5_ds.tas.sel(lat=slice(*lat_bnds), lon=slice(*lon_bnds),
+						  time=era5_ds.time.dt.year.isin(years_hist)) - 273.15
+	# Assuming you will load and process data here as in your original function.
+	# The process should be adapted to use the `lat_bnds` and `lon_bnds` of the current box.
+	print(f"Processing box: {lat_lon_ext} for {source_id}, {member_id}, scenarios: {', '.join(scenarios)}")
 
 	# Load CMIP6 data catalog
 	df_catalog = pd.read_csv('https://storage.googleapis.com/cmip6/cmip6-zarr-consolidated-stores.csv')
@@ -136,10 +161,10 @@ def load_and_process_data(source_id, member_id, scenarios):
 			print(f"Historical data saved to: {output_path_hist}")
 			print(f"Future SSP3-7.0 scenario data saved to: {output_path_ssp3}")
 			# Define output file paths for DBCCA
-			file_hist_dbcca = f"dbcca_data/{source_id}_historical_{member_id}_DBCCA.nc"
-			file_ssp3_dbcca = f"dbcca_data/{source_id}_{scenario}_{member_id}_DBCCA.nc"
-			file_hist_bcca = f"dbcca_data/{source_id}_historical_{member_id}_BCCA.nc"
-			file_ssp3_bcca = f"dbcca_data/{source_id}_{scenario}_{member_id}_BCCA.nc"
+			file_hist_dbcca = f"dbcca_data/{source_id}_historical_{member_id}_DBCCA_{lat_lon_ext}.nc"
+			file_ssp3_dbcca = f"dbcca_data/{source_id}_{scenario}_{member_id}_DBCCA_{lat_lon_ext}.nc"
+			file_hist_bcca = f"dbcca_data/{source_id}_historical_{member_id}_BCCA_{lat_lon_ext}.nc"
+			file_ssp3_bcca = f"dbcca_data/{source_id}_{scenario}_{member_id}_BCCA_{lat_lon_ext}.nc"
 
 			# Conditional downscaling logic
 			if not os.path.exists(file_hist_dbcca) or not os.path.exists(file_ssp3_dbcca):
@@ -170,11 +195,13 @@ def load_and_process_data(source_id, member_id, scenarios):
 
 		else:
 			print(f"No data found for {source_id}, {scenario}, {member_id}")
+	del tas_obs
 
 
 def main():
-	for model, member_id, scenarios in models_scenarios:
-		load_and_process_data(model, member_id, scenarios)
+	for box in boxes:
+		for model, member_id, scenarios in models_scenarios:
+			load_and_process_data(model, member_id, scenarios, box)
 
 	print("Process completed successfully.")
 
