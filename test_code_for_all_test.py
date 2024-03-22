@@ -62,8 +62,9 @@ def manage_dask_client():
 		print("No existing Dask client found. Proceeding to create a new one.")
 		#return Client(n_workers=8, threads_per_worker=2, timeout="60s", memory_limit='4GB')
 		# Example configuration: 4 workers, one for each day, with a large amount of memory per worker
-		return Client(n_workers=8, threads_per_worker=2, timeout="60s", memory_limit='4GB')
-		#return client
+		#return Client(n_workers=8, threads_per_worker=2, timeout="60s", memory_limit='4GB')
+		client = Client(n_workers=4, threads_per_worker=1)
+		return client
 
 
 import os
@@ -103,9 +104,10 @@ boxes = generate_boxes(whole_lat_bnds, whole_lon_bnds, step=46)
 
 
 start_future = 2091
-end_future = 2100
+end_future = 2096
 start_hist = 1991
-end_hist = 2000
+end_hist = 1996
+
 # Define the years for historical and future periods
 years_hist = range(start_hist, end_hist + 1)
 years_future = range(start_future, end_future + 1)
@@ -239,7 +241,7 @@ def load_and_process_data(source_id, member_id, scenarios, box):
 					fout_future_bcca=file_ssp3_bcca,
 					fout_hist_dbcca=file_hist_dbcca,
 					fout_future_dbcca=file_ssp3_dbcca,
-					write_output=True, box_length= 3
+					write_output=True, box_length= 7
 					)
 					print("Downscaling process completed.")
 			else:
@@ -258,7 +260,7 @@ def main():
 		for model, member_id, scenarios in models_scenarios:
 			load_and_process_data(model, member_id, scenarios, box)
 
-		load_and_process_data(model, member_id, scenarios, box)
+		#load_and_process_data(model, member_id, scenarios, box)
 	print("Process completed successfully.")
 
 if __name__ == '__main__':
