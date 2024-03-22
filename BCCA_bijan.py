@@ -1,8 +1,10 @@
 """
-BCCA.py
-
+BCCA_bijan.py
+original codefrom https://github.com/mikemorris12/UTCDW_Guidebook
 code for implementing the Bias-Corrected Constructed Analogues
 statistical downscaling method (Werner & Cannon, 2016)
+modified by Bijan Fallah to include the option to save the output as well as larger
+domains based on a smaller analougues domain
 """
 import dask
 import numpy as np
@@ -175,12 +177,13 @@ def find_analogues_onetime(field_gcm, obs_coarse, time_mapper, n_analogues = 30,
     """
     # the algorithm crashes for big data sets
     # therefore I am selecting a smaller
-    # Calculate center coordinates
-    center_lat = obs_coarse.lat.mean()
+    # Calculate lower right coordinates where I have more mountains
+    half_box = box_length / 2
+    center_lat = obs_coarse.lat.min() + half_box + 1 # +1 to avoid the border
     center_lon = obs_coarse.lon.mean()
 
     # Define smaller domain based on box_length
-    half_box = box_length / 2
+
     lat_min = center_lat - half_box
     lat_max = center_lat + half_box
     lon_min = center_lon - half_box

@@ -1,3 +1,31 @@
+"""
+test_code_for_all_test.py
+This script performs downscaling of coarse CMIP6 model outputs to a finer resolution using the Double
+Bias-Corrected Constructed Analogues (DBCCA) statistical downscaling method, as described in Werner & Cannon (2016).
+The target dataset for downscaling is based on the CHELSA (Climatologies at high resolution for the earth’s
+land surface areas) dataset observations, providing users with high-resolution climate projections.
+
+
+The script includes functionality for:
+1. Loading CMIP6 global climate model (GCM) data.
+2. Selecting specific models, scenarios, and time slices.
+3. Downloading the selected CMIP6 data and preparing it for downscaling.
+4. Applying the DBCCA method to downscale the GCM data to the resolution of the CHELSA observational dataset.
+5. Saving the downscaled data for further analysis or visualization.
+
+This script is intended for researchers and practitioners in climate science and related fields who require high-resolution
+climate projections for impact assessments, climate change research, and adaptation planning.
+
+Prerequisites:
+- Installation of necessary Python packages including xarray, dask, numpy, pandas, gcsfs, and netCDF4.
+- Access to CMIP6 data either through a local repository or remote data services.
+- The CHELSA dataset or a similar high-resolution observational dataset for the target variable (e.g., surface temperature).
+
+Usage:
+- Update the script with the specific CMIP6 models, scenarios, and time slices of interest.
+- Ensure the CHELSA dataset (or similar) is accessible by the script for the downscaling process.
+
+"""
 import sys
 import os
 import gc
@@ -46,12 +74,12 @@ from xclim.core.calendar import convert_calendar
 
 #lat_bnds = [33.25, 56.75]
 #lon_bnds = [45.25, 90.75]
-
+offset = -273.15 # Convert from K to C
 # Define the whole domain
-##whole_lat_bnds = [33.25, 56.75]
-##whole_lon_bnds = [45.25, 90.75]
-whole_lat_bnds = [33.25, 35.75]
-whole_lon_bnds = [45.25, 47.75]
+whole_lat_bnds = [33.25, 56.75]
+whole_lon_bnds = [45.25, 90.75]
+#whole_lat_bnds = [33.25, 35.75]
+#whole_lon_bnds = [45.25, 47.75]
 # Generate 4x4 degree boxes within the domain
 def generate_boxes(lat_range, lon_range, step=4):
     lat_boxes = np.arange(lat_range[0], lat_range[1], step)
@@ -68,11 +96,11 @@ boxes = generate_boxes(whole_lat_bnds, whole_lon_bnds, step=46)
 
 
 
-#years_hist = range(1979, 2011)
-#years_future = range(2071, 2101)
+years_hist = range(1979, 2011)
+years_future = range(2071, 2101)
 years_obs = range(1979, 2015)
-years_hist = range(1979, 1981)
-years_future = range(2071, 2073)
+#years_hist = range(1979, 1981)
+#years_future = range(2071, 2073)
 
 
 url = "chelsa-w5e5v1.0_obsclim_tas_300arcsec_global_daily_1979_2014.nc"
@@ -117,57 +145,106 @@ def load_and_process_data(source_id, member_id, scenarios, box):
 	lon_bnds = [box[2], box[3]]
 	lat_lon_ext = f"{lat_bnds[0]}-{lat_bnds[1]}_{lon_bnds[0]}-{lon_bnds[1]}"
 	tas_obs = era5_ds.tas.sel(lat=slice(*lat_bnds), lon=slice(*lon_bnds),
-						  time=era5_ds.time.dt.year.isin(years_obs)) - 273.15
-	#tas_obs = tas_obs.chunk({'time': -1})
+						  time=era5_ds.time.dt.year.isin(years_obs)) + offset
 
 	print(f"Processing box: {lat_lon_ext} for {source_id}, {member_id}, scenarios: {', '.join(scenarios)}")
-	scenario = scenarios[0]
-	if True:
-		tas_hist_raw = xr.open_dataset( 'dbcca_data/GFDL-ESM4_historical_r1i1p1f1_RAW.nc' , engine='netcdf4')
-		tas_hist_raw = tas_hist_raw.tas.sel(lat=slice(*lat_bnds), lon=slice(*lon_bnds),
-						  time=tas_hist_raw.time.dt.year.isin(years_hist))
-		tas_ssp3_raw = xr.open_dataset( 'dbcca_data/GFDL-ESM4_ssp585_r1i1p1f1_RAW.nc' , engine='netcdf4')
-		tas_ssp3_raw = tas_ssp3_raw.tas.sel(lat=slice(*lat_bnds), lon=slice(*lon_bnds),
-						  time=tas_ssp3_raw.time.dt.year.isin(years_future))
-		#print(tas_hist_raw.tas.isel(time = 0).values)
-		#tas_hist_raw = tas_hist_raw.chunk({'time': -1})
-		#tas_ssp3_raw = tas_ssp3_raw.chunk({'time': -1})
-		file_hist_dbcca = f"dbcca_data/{source_id}_historical_{member_id}_DBCCA_{lat_lon_ext}.nc"
-		file_ssp3_dbcca = f"dbcca_data/{source_id}_{scenario}_{member_id}_DBCCA_{lat_lon_ext}.nc"
-		file_hist_bcca = f"dbcca_data/{source_id}_historical_{member_id}_BCCA_{lat_lon_ext}.nc"
-		file_ssp3_bcca = f"dbcca_data/{source_id}_{scenario}_{member_id}_BCCA_{lat_lon_ext}.nc"
-		print("size of the datasets used are ", 		tas_hist_raw.shape	, tas_ssp3_raw.shape, tas_obs.shape)
-		if not os.path.exists(file_hist_dbcca) or not os.path.exists(file_ssp3_dbcca):
-				print("DBCCA outputs not found. Starting downscaling process...")
-				# Assuming DBCCA function is properly defined and imported
-				tas_hist_dbcca, tas_ssp3_dbcca = DBCCA(
-				tas_hist_raw,
-				tas_ssp3_raw,
-				tas_obs,
-				"tas",
-				units="degC",
-				bc_grouper = 'time.dayofyear',
-				fout_hist_bcca=file_hist_bcca,
-				fout_future_bcca=file_ssp3_bcca,
-				fout_hist_dbcca=file_hist_dbcca,
-				fout_future_dbcca=file_ssp3_dbcca,
-				write_output=True, box_length= 2
-				)
-				print("Downscaling process completed.")
+	# Load CMIP6 data catalog
+	df_catalog = pd.read_csv('https://storage.googleapis.com/cmip6/cmip6-zarr-consolidated-stores.csv')
+	df_search_hist = df_catalog[(df_catalog.table_id == 'day') & (df_catalog.source_id == source_id) &
+					   (df_catalog.variable_id == 'tas') & (df_catalog.experiment_id == 'historical') &
+					   (df_catalog.member_id == member_id)]
+	# Example for loading dataset (simplified)
+	# Actual implementation may vary based on your data source and structure
+	cs = gcsfs.GCSFileSystem(token='anon')
+	url = df_search_hist[df_search_hist.experiment_id == 'historical'].zstore.values[0]
+	mapper = cs.get_mapper(url)
+	ds = xr.open_zarr(mapper, consolidated=True)
+	tas = ds.tas.sel(lat=slice(*lat_bnds), lon=slice(*lon_bnds))
+	tas_hist_raw = tas.sel(time=tas.time.dt.year.isin(years_hist)) + offset
+	tas_hist_raw = convert_calendar(tas_hist_raw, 'noleap', align_on='date')#.chunk({'time': -1})
+	for scenario in scenarios:  # Include historical scenario
+
+		print(f"Processing {source_id}, {member_id}, {scenario}...")
+		df_search_scenario = df_catalog[(df_catalog.table_id == 'day') & (df_catalog.source_id == source_id) &
+								   (df_catalog.variable_id == 'tas') & (df_catalog.experiment_id == scenario) &
+								   (df_catalog.member_id == member_id)]
+
+		if not df_search_scenario.empty:
+			# Example for loading dataset (simplified)
+			# Actual implementation may vary based on your data source and structure
+			cs = gcsfs.GCSFileSystem(token='anon')
+			url = df_search_scenario[df_search_scenario.experiment_id == scenario].zstore.values[0]
+			mapper = cs.get_mapper(url)
+			ds = xr.open_zarr(mapper, consolidated=True)
+			tas = ds.tas.sel(lat=slice(*lat_bnds), lon=slice(*lon_bnds))
+			tas_ssp3_raw = tas.sel(time=tas.time.dt.year.isin(years_future)) + offset
+
+
+			print(df_search_hist)
+			# Convert calendar if necessary
+			tas_ssp3_raw = convert_calendar(tas_ssp3_raw, 'noleap', align_on='date')#.chunk({'time': -1})
+			print("Saving datasets to NetCDF...")
+			output_path_hist = f"dbcca_data/{source_id}_historical_{member_id}_RAW.nc"
+			output_path_ssp3 = f"dbcca_data/{source_id}_{scenario}_{member_id}_RAW.nc"
+
+			# Check if the historical dataset already exists
+			if not os.path.exists(output_path_hist):
+				print(f"Saving historical dataset to: {output_path_hist}")
+				tas_hist_raw.to_netcdf(output_path_hist)
+			else:
+				print(f"Historical dataset already exists at: {output_path_hist}")
+
+			# Check if the future scenario dataset already exists
+			if not os.path.exists(output_path_ssp3):
+				print(f"Saving future scenario dataset to: {output_path_ssp3}")
+				tas_ssp3_raw.to_netcdf(output_path_ssp3)
+			else:
+				print(f"Future scenario dataset already exists at: {output_path_ssp3}")
+
+			print(f"Historical data saved to: {output_path_hist}")
+			print(f"Future SSP scenario data saved to: {output_path_ssp3}")
+
+			tas_hist_raw = xr.open_dataset( output_path_hist , engine='netcdf4')
+			tas_hist_raw = tas_hist_raw.tas.sel(lat=slice(*lat_bnds), lon=slice(*lon_bnds),
+							  time=tas_hist_raw.time.dt.year.isin(years_hist))
+			tas_ssp3_raw = xr.open_dataset( output_path_ssp3 , engine='netcdf4')
+			tas_ssp3_raw = tas_ssp3_raw.tas.sel(lat=slice(*lat_bnds), lon=slice(*lon_bnds),
+							  time=tas_ssp3_raw.time.dt.year.isin(years_future))
+			file_hist_dbcca = f"dbcca_data/{source_id}_historical_{member_id}_DBCCA_{lat_lon_ext}.nc"
+			file_ssp3_dbcca = f"dbcca_data/{source_id}_{scenario}_{member_id}_DBCCA_{lat_lon_ext}.nc"
+			file_hist_bcca = f"dbcca_data/{source_id}_historical_{member_id}_BCCA_{lat_lon_ext}.nc"
+			file_ssp3_bcca = f"dbcca_data/{source_id}_{scenario}_{member_id}_BCCA_{lat_lon_ext}.nc"
+			print("size of the datasets used are ", 		tas_hist_raw.shape	, tas_ssp3_raw.shape, tas_obs.shape)
+			if not os.path.exists(file_hist_dbcca) or not os.path.exists(file_ssp3_dbcca):
+					print("DBCCA outputs not found. Starting downscaling process...")
+					# Assuming DBCCA function is properly defined and imported
+					tas_hist_dbcca, tas_ssp3_dbcca = DBCCA(
+					tas_hist_raw,
+					tas_ssp3_raw,
+					tas_obs,
+					"tas",
+					units="degC",
+					bc_grouper = 'time.dayofyear',
+					fout_hist_bcca=file_hist_bcca,
+					fout_future_bcca=file_ssp3_bcca,
+					fout_hist_dbcca=file_hist_dbcca,
+					fout_future_dbcca=file_ssp3_dbcca,
+					write_output=True, box_length= 5
+					)
+					print("Downscaling process completed.")
+			else:
+					print("DBCCA outputs found. Skipping downscaling.")
 		else:
-				print("DBCCA outputs found. Skipping downscaling.")
-	else:
 			print(f"No data found for {source_id}, {scenario}, {member_id}")
 	del tas_obs
+	gc.collect()
 
 
 def main():
 	for box in boxes:
-		#for model, member_id, scenarios in models_scenarios:
-		#	load_and_process_data(model, member_id, scenarios, box)
-		model = "GFDL-ESM4"
-		member_id = "r1i1p1f1"
-		scenarios = ["ssp585"]
+		for model, member_id, scenarios in models_scenarios:
+			load_and_process_data(model, member_id, scenarios, box)
+
 		load_and_process_data(model, member_id, scenarios, box)
 	print("Process completed successfully.")
 
