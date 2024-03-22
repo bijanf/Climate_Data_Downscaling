@@ -176,7 +176,7 @@ def find_analogues_onetime(field_gcm, obs_coarse, time_mapper, n_analogues = 30,
       such as precipitation do not yield negative values in the downscaled data (Optional).
     """
     # the algorithm crashes for big data sets
-    # therefore I am selecting a smaller
+    # therefore I am selecting a smaller one
     # Calculate lower right coordinates where I have more mountains
     half_box = box_length / 2
     center_lat = obs_coarse.lat.min() + half_box + 1 # +1 to avoid the border
@@ -212,12 +212,6 @@ def find_analogues_onetime(field_gcm, obs_coarse, time_mapper, n_analogues = 30,
     measures_sorted = measures.sortby(measures, ascending = True)
     analogue_times = measures_sorted.isel(time = slice(0, n_analogues)).time#.to_dataset(name = 'atime')
     obs_analogues = obs_candidates.sel(time = analogue_times)
-    ##print("------------------ selected ----------------------------\n", obs_analogues)
-    # format the times into a way that they can be concattenated by the model time
-    # and then return
-    #analogue_times = analogue_times.rename({'time': 'analogue_index'})
-    #analogue_times = analogue_times.reset_index('analogue_index')
-    #analogue_times = analogue_times.assign_coords(time = gcm_time)
     obs_analogues = obs_coarse.sel(time = obs_analogues.time)
     # Cleanup: delete variables that are no longer needed
     del center_lat, center_lon, half_box, lat_min, lat_max, lon_min, lon_max, obs_coarse_smaller, field_gcm_smaller, gcm_time, obs_candidates, measures, measures_sorted, analogue_times
@@ -226,7 +220,6 @@ def find_analogues_onetime(field_gcm, obs_coarse, time_mapper, n_analogues = 30,
     gc.collect()
 
     #return analogue_times
-    ##print("---------------------final--------------------------\n", obs_analogues)
     return obs_analogues
 
 @dask.delayed
@@ -361,6 +354,7 @@ def construct_analogue_onetime(field_gcm, obs_coarse, obs_fine, time_mapper,
     #constructed_analogue = constructed_analogue.assign_coords(time = field_gcm.time) # doesn't work nice with delayed data
 
     return constructed_analogue
+
 def process_chunk(data_gcm_chunk, obs_coarse, obs_fine, time_mapper, metric, n_analogues, window_unit, jitter, jitter_thresh, transform, penalty, box_length):
     da_list = []
     for i in range(len(data_gcm_chunk.time)):

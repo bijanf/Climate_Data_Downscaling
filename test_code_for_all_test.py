@@ -60,13 +60,20 @@ def manage_dask_client():
 		client.close()
 	except ValueError:
 		print("No existing Dask client found. Proceeding to create a new one.")
-	return Client(n_workers=8, threads_per_worker=2, timeout="60s", memory_limit='4GB')
+		#return Client(n_workers=8, threads_per_worker=2, timeout="60s", memory_limit='4GB')
+		# Example configuration: 4 workers, one for each day, with a large amount of memory per worker
+		return Client(n_workers=8, threads_per_worker=2, timeout="60s", memory_limit='4GB')
+		#return client
+
 
 import os
 import pandas as pd
 import xarray as xr
 import gcsfs
 from xclim.core.calendar import convert_calendar
+
+
+
 #from DBCCA import DBCCA  # Assuming this is your downscaling function
 
 #lat_bnds = [35.25, 37.75]
@@ -95,9 +102,13 @@ def generate_boxes(lat_range, lon_range, step=4):
 boxes = generate_boxes(whole_lat_bnds, whole_lon_bnds, step=46)
 
 
-
-years_hist = range(1979, 2011)
-years_future = range(2071, 2101)
+start_future = 2091
+end_future = 2100
+start_hist = 1991
+end_hist = 2000
+# Define the years for historical and future periods
+years_hist = range(start_hist, end_hist + 1)
+years_future = range(start_future, end_future + 1)
 years_obs = range(1979, 2015)
 #years_hist = range(1979, 1981)
 #years_future = range(2071, 2073)
@@ -106,7 +117,6 @@ years_obs = range(1979, 2015)
 url = "chelsa-w5e5v1.0_obsclim_tas_300arcsec_global_daily_1979_2014.nc"
 era5_ds = xr.open_dataset(url, engine='netcdf4')
 
-#tas_obs.to_netcdf("obs.nc")
 
 def reorder_netcdf_dimensions(input_file_path, output_file_path):
 	"""
@@ -210,10 +220,10 @@ def load_and_process_data(source_id, member_id, scenarios, box):
 			tas_ssp3_raw = xr.open_dataset( output_path_ssp3 , engine='netcdf4')
 			tas_ssp3_raw = tas_ssp3_raw.tas.sel(lat=slice(*lat_bnds), lon=slice(*lon_bnds),
 							  time=tas_ssp3_raw.time.dt.year.isin(years_future))
-			file_hist_dbcca = f"dbcca_data/{source_id}_historical_{member_id}_DBCCA_{lat_lon_ext}.nc"
-			file_ssp3_dbcca = f"dbcca_data/{source_id}_{scenario}_{member_id}_DBCCA_{lat_lon_ext}.nc"
-			file_hist_bcca = f"dbcca_data/{source_id}_historical_{member_id}_BCCA_{lat_lon_ext}.nc"
-			file_ssp3_bcca = f"dbcca_data/{source_id}_{scenario}_{member_id}_BCCA_{lat_lon_ext}.nc"
+			file_hist_dbcca = f"dbcca_data/{source_id}_historical_{member_id}_DBCCA_{lat_lon_ext}_{start_hist}_{end_hist}.nc"
+			file_ssp3_dbcca = f"dbcca_data/{source_id}_{scenario}_{member_id}_DBCCA_{lat_lon_ext}_{start_future}_{end_future}.nc"
+			file_hist_bcca = f"dbcca_data/{source_id}_historical_{member_id}_BCCA_{lat_lon_ext}_{start_hist}_{end_hist}.nc"
+			file_ssp3_bcca = f"dbcca_data/{source_id}_{scenario}_{member_id}_BCCA_{lat_lon_ext}_{start_future}_{end_future}.nc"
 			print("size of the datasets used are ", 		tas_hist_raw.shape	, tas_ssp3_raw.shape, tas_obs.shape)
 			if not os.path.exists(file_hist_dbcca) or not os.path.exists(file_ssp3_dbcca):
 					print("DBCCA outputs not found. Starting downscaling process...")
@@ -229,7 +239,7 @@ def load_and_process_data(source_id, member_id, scenarios, box):
 					fout_future_bcca=file_ssp3_bcca,
 					fout_hist_dbcca=file_hist_dbcca,
 					fout_future_dbcca=file_ssp3_dbcca,
-					write_output=True, box_length= 5
+					write_output=True, box_length= 3
 					)
 					print("Downscaling process completed.")
 			else:
@@ -241,6 +251,9 @@ def load_and_process_data(source_id, member_id, scenarios, box):
 
 
 def main():
+	# Manage Dask client
+	#
+	#manage_dask_client()
 	for box in boxes:
 		for model, member_id, scenarios in models_scenarios:
 			load_and_process_data(model, member_id, scenarios, box)
