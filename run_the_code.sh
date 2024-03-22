@@ -3,10 +3,10 @@ set -ex # Enable debugging and exit on error
 
 # Define arrays of start and end years for future and historical periods
 # Adjust these arrays as per your requirement
-start_futures=(2071 2076 2081 2086 2091)
-end_futures=(2081 2086 2091  2096 2101)
-start_hists=(1981 1986 1991 1996 2001)
-end_hists=(1991 1996 2001 2006 2011)
+start_futures=(2071 2076 2081 2086 2091 2096)
+end_futures=(2076 2081 2086 2091 2096 2101)
+start_hists=(1981 1986 1991 1996 2001 2006)
+end_hists=(1986 1991 1996 2001 2006 2011)
 
 # Path to the Python script
 script_path="test_code_for_all_test.py"
