@@ -30,7 +30,7 @@ cd climate-data-downscaling
 the main code to run is 
 
 ```bash
-
+test_code_for_all_test.py 
 ```
 
 
@@ -39,4 +39,4 @@ the main code to run is
 ## TODO:
 - find the best settings for other variables than tas
 - implement a code for looping over variables
-- 
+- accelerate the code: break it to downloading and then downscaling/bias adjustement
