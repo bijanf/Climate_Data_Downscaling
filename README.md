@@ -25,8 +25,13 @@ git clone https://github.com/yourusername/climate-data-downscaling.git
 cd climate-data-downscaling
 ```
 
+## Usage 
 
+the main code to run is 
 
+```bash
+
+```
 
 
 - The method is based on analogues metho: https://utcdw.physics.utoronto.ca/UTCDW_Guidebook/README.html
